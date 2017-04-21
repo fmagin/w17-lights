@@ -1,8 +1,9 @@
 #!/bin/env python3
-from lights import Client, ColorSpace
 import random
 import time
 import math
+import _thread
+from lights import Client, ColorSpace
 
 
 class GameOfLife():
@@ -11,13 +12,13 @@ class GameOfLife():
     RULE90 = {0b111: 0, 0b110: 1, 0b101: 0, 0b100: 1, 0b011: 1, 0b010: 0, 0b001: 1, 0b000: 0}
     RULE110 = {0b111: 0, 0b110: 1, 0b101: 1, 0b100: 0, 0b011: 1, 0b010: 1, 0b001: 1, 0b000: 0}
     RULE184 = {0b111: 1, 0b110: 0, 0b101: 1, 0b100: 1, 0b011: 1, 0b010: 0, 0b001: 0, 0b000: 0}
-    hue, saturation = 0.1, 0.8
+    hue, saturation = 0.1, 1
     LEDCOUNT = 1600
     state = [] # type: List[(float, float, float)]
     def __init__(self):
         """Initialize with a random start state"""
         self.connection = Client("light.w17.io", 1337)
-        self.state = [(self.hue, self.saturation, 1.0) if random.random() < 0.5
+        self.state = [(self.hue, self.saturation, 1.0) if random.random() < 0.2
                       else (self.hue, self.saturation, 0.0) for _ in range(self.LEDCOUNT)]
 
     def push(self):
@@ -40,13 +41,29 @@ class GameOfLife():
             value = rule[parent_value]
             new_state.append((hue, saturation, value))
         self.state = new_state
-        self.hue = (self.hue + 0.1) % 360
+        self.hue = (self.hue + 1) % 360
+
+def thread_tick(rules, ticklength):
+    while True:
+        animation.tick(rules, ticklength)
+
+def thread_push():
+    while True:
+        animation.push()
+
+
 
 if __name__ == "__main__":
     animation = GameOfLife()
-    while True:
-        animation.tick(GameOfLife.RULE30, 0.2)
-        animation.push()
+
+    try:
+        _thread.start_new_thread(thread_tick, (GameOfLife.RULE30, 0.2))
+        _thread.start_new_thread(thread_push, ())
+    except:
+        print("Something failed")
+
+    while 1:
+        pass
 
 """
 H,S,V = 0.1, 0.8, 0.8 
